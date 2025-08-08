@@ -1,0 +1,14 @@
+# General
+.DS_Store
+.env
+.env.*
+dist
+build
+node_modules
+.idea
+.vscode
+# Expo/React Native
+.expo
+.expo-shared
+ios/build
+android/app/build
