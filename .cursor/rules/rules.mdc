@@ -1,0 +1,29 @@
+---
+alwaysApply: true
+---
+
+### Progress Tracker (Always On)
+
+- Maintain a concise Progress Tracker for every active goal.
+- Update it on every turn:
+  - Current goal (one sentence)
+  - Next actions (3–5 bullet checklist)
+  - Decisions and assumptions
+  - Blockers and dependencies
+  - Done log (append brief items as completed)
+- Refer to the Progress Tracker before planning actions and after executing them.
+- Use it to decide when a goal is complete; close only when checklist is done and blockers resolved or accepted.
+- Keep entries short, skimmable, and incremental; never delete prior items, append updates.
+- If there are parallel sub-tasks, track them as nested checklists.
+- If a tracker does not yet exist for the goal, create it immediately within the message.
+
+Example skeleton:
+
+Progress Tracker
+- Current goal: <one sentence>
+- Next actions:
+  - [ ] Step 1
+  - [ ] Step 2
+- Decisions/assumptions: <bullets>
+- Blockers: <bullets or “none”>
+- Done log: <bullets as you complete steps>
