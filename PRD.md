@@ -221,7 +221,7 @@ npx create-turbo@latest trex-ai
 
 # 2. Setup Next.js web app
 cd trex-ai/apps/web
-npx shadcn-ui@latest init
+npx shadcn@latest init
 
 # 3. Setup Supabase
 npx supabase init
