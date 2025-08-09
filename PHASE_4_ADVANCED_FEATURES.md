@@ -1,287 +1,775 @@
-# Phase 4: Advanced Features & Polish
-**Duration**: Days 12-14  
-**Goal**: Add AI features, admin tools, and production readiness  
-**Deliverable**: Full-featured platform ready for production deployment
+# Phase 4: Backend Integration & Production
 
-## Success Criteria
-- [ ] AI workout summaries and weekly digests functional
-- [ ] Admin dashboard with audit trails and monitoring
-- [ ] Production deployment pipeline established
-- [ ] Performance optimized for target load
-- [ ] Documentation and onboarding materials ready
+**Duration**: Days 13-14  
+**Focus**: Supabase integration, Strava API, real data flow, production deployment  
+**Backend**: Full implementation with live data
 
-## Features Included
+## Objectives
 
-### 5.9 AI Summaries (Complete)
-**Per-Workout Summaries**:
-- Auto-generated on workout ingest
-- Highlights, compliance analysis, coaching suggestions
-- Token budget controls (max 1,200 output tokens)
-- Caching with version keys
-- Regeneration limits (max 5 per day per workout)
+- ✅ Supabase database and authentication integration
+- ✅ Strava API connection and webhook processing
+- ✅ Real-time data synchronization
+- ✅ Production deployment (web + mobile)
+- ✅ Performance optimization and monitoring
+- ✅ All MVP acceptance criteria met
 
-**Weekly Coach Digest**:
-- Auto-sent Sunday 18:00 coach local time
-- Load/TSB trends, PBs, anomalies, coaching notes summary
-- Max 2,000 output tokens
-- Aggregates across all assigned athletes
+## Day 13: Backend Integration & Data Migration
 
-**Implementation Details**:
-- Default model: GPT-4o-mini for cost efficiency
-- Prompt engineering for consistent, actionable output
-- PII redaction (emails, device IDs, GPS coordinates)
-- Hard timeout at 20 seconds per generation
-- Audit trail for all AI generations
+### Morning: Supabase Setup & Schema Migration
+```sql
+-- supabase/migrations/001_initial_schema.sql
+-- Users and authentication
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  auth_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('athlete', 'coach', 'master')),
+  team_id UUID NOT NULL,
+  timezone TEXT NOT NULL DEFAULT 'UTC',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-### 5.10 Admin & Audit (Complete)
-**Master Dashboard**:
-- User management (roles, assignments, connections)
-- System health monitoring (webhooks, jobs, failures)
-- Dead letter queue management with retry controls
-- Export functionality (JSON/CSV per athlete/team)
-- Audit log viewer with filtering
+-- Teams (single team for MVP)
+CREATE TABLE teams (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-**Audit Capabilities**:
-- All workout edits (planned and actual)
-- Threshold/zone changes
-- Role assignments and permission changes
-- AI generation logs with token usage
-- Failed job tracking and retry history
+-- Athlete profiles
+CREATE TABLE athlete_profiles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  team_id UUID NOT NULL REFERENCES teams(id),
+  sport TEXT NOT NULL,
+  ftp INTEGER,
+  lthr INTEGER,
+  threshold_pace INTEGER,
+  strava_connected BOOLEAN DEFAULT FALSE,
+  strava_athlete_id BIGINT,
+  strava_access_token TEXT,
+  strava_refresh_token TEXT,
+  strava_token_expires_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-**Implementation Details**:
-- Only Master role can access admin features
-- DLQ retry with exponential backoff (max 5 attempts)
-- Sensitive data redaction in logs
-- Export with date range and athlete filtering
-- System metrics dashboards
+-- Planned workouts
+CREATE TABLE workouts_planned (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES teams(id),
+  athlete_id UUID NOT NULL REFERENCES users(id),
+  date DATE NOT NULL,
+  discipline TEXT NOT NULL,
+  title TEXT,
+  duration INTEGER, -- minutes
+  distance DECIMAL,
+  intensity TEXT,
+  structure JSONB,
+  notes TEXT,
+  created_by UUID NOT NULL REFERENCES users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-### 5.11 Offline Support (Enhanced)
-**Advanced Caching**:
-- IndexedDB for structured data storage
-- Service worker for API request caching
-- Background sync for queued operations
-- Conflict resolution with server timestamps
+-- Actual workouts (from Strava)
+CREATE TABLE workouts_actual (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  team_id UUID NOT NULL REFERENCES teams(id),
+  athlete_id UUID NOT NULL REFERENCES users(id),
+  strava_activity_id BIGINT UNIQUE,
+  date DATE NOT NULL,
+  discipline TEXT NOT NULL,
+  title TEXT NOT NULL,
+  duration INTEGER NOT NULL, -- seconds
+  distance DECIMAL,
+  summary_metrics JSONB NOT NULL,
+  detailed_data JSONB,
+  polyline TEXT,
+  source TEXT DEFAULT 'strava' CHECK (source IN ('strava', 'manual', 'reconciliation')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-**Offline Capabilities**:
-- Read calendar and workout details
-- Compose comments and chat messages
-- Draft planned workouts
-- View analytics dashboards (cached)
-
-### Production Readiness
-
-**Performance Optimization**:
-- Database query optimization and indexing
-- CDN setup for static assets
-- Image optimization and lazy loading
-- Bundle splitting and code optimization
-- Cache-Control headers and ETags
-
-**Monitoring & Observability**:
-- PostHog analytics integration
-- Sentry error tracking (web, mobile, API)
-- System metrics monitoring
-- Webhook latency tracking
-- Strava API quota monitoring
-
-**Security Hardening**:
-- Content Security Policy (CSP)
-- Rate limiting on API endpoints
-- Input validation and sanitization
-- Secrets rotation procedures
-- Security headers configuration
-
-### Enhanced Database Schema
-**Additional Tables**:
-- `ai_generations` (id, team_id, entity_type, entity_id, model, prompt_version, tokens_used, created_at)
-- `system_metrics` (id, metric_type, value, timestamp)
-- `webhook_events` (id, team_id, event_type, payload_hash, processed_at, error)
-
-### AI Implementation Details
-**Prompt Templates**:
-```javascript
-// Per-workout summary prompt
-const workoutPrompt = `
-Analyze this ${discipline} workout for coaching insights:
-- Planned: ${planned.duration}min, ${planned.intensity} intensity
-- Actual: ${actual.duration}min, ${actual.avgPower}W, TSS ${actual.tss}
-- Compliance: ${compliance}%
-
-Provide:
-1. Key highlights (2-3 bullet points)
-2. Compliance assessment 
-3. One actionable coaching note
-4. Any concerns or red flags
-
-Keep response under 150 words, professional tone.
-`;
-
-// Weekly digest prompt  
-const digestPrompt = `
-Weekly summary for ${athlete.name} (${dateRange}):
-- Total TSS: ${weekTSS} (planned: ${plannedTSS})
-- CTL: ${ctl} → ${newCtl} (${ctlTrend})
-- Missed sessions: ${missedCount}
-- New PBs: ${pbs.join(', ')}
-
-Provide:
-1. Training load assessment
-2. Performance highlights  
-3. Areas of concern
-4. 2-3 coaching recommendations for next week
-
-Response under 250 words.
-`;
+-- Enable RLS
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE athlete_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE workouts_planned ENABLE ROW LEVEL SECURITY;
+ALTER TABLE workouts_actual ENABLE ROW LEVEL SECURITY;
 ```
 
-**Token Management**:
-- Usage tracking per athlete/coach
-- Monthly budget alerts
-- Model fallback hierarchy (GPT-4o-mini → GPT-3.5-turbo)
-- Batch processing for efficiency
+### Service Layer Refactoring
+```typescript
+// services/supabaseService.ts
+export class SupabaseService implements TrainingServiceInterface {
+  constructor(private supabase: SupabaseClient) {}
+  
+  async getAthleteMetrics(athleteId: string): Promise<DailyMetrics[]> {
+    const { data, error } = await this.supabase
+      .from('metrics_daily')
+      .select('*')
+      .eq('athlete_id', athleteId)
+      .order('date', { ascending: true })
+      
+    if (error) throw error
+    return data
+  }
+  
+  async planWorkout(workout: PlannedWorkout): Promise<PlannedWorkout> {
+    const { data, error } = await this.supabase
+      .from('workouts_planned')
+      .insert([{
+        team_id: workout.teamId,
+        athlete_id: workout.athleteId,
+        date: workout.date,
+        discipline: workout.discipline,
+        title: workout.title,
+        duration: workout.duration,
+        distance: workout.distance,
+        intensity: workout.intensity,
+        structure: workout.structure,
+        notes: workout.notes,
+        created_by: workout.createdBy
+      }])
+      .select()
+      .single()
+      
+    if (error) throw error
+    return this.mapPlannedWorkout(data)
+  }
+  
+  async syncStravaActivity(activityId: string): Promise<void> {
+    // Call our API route to fetch and process Strava activity
+    const response = await fetch(`/api/strava/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activityId })
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to sync Strava activity')
+    }
+  }
+}
 
-### Admin Dashboard Features
-**User Management**:
-- Role assignment interface
-- Athlete-coach relationship management
-- Account status and connection monitoring
-- Bulk operations (invites, role changes)
+// providers/ServiceProvider.tsx
+export const ServiceProvider = ({ children }: Props) => {
+  const supabase = createClient(
+    process.env.EXPO_PUBLIC_SUPABASE_URL!,
+    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  
+  const service = useMemo(() => 
+    new SupabaseService(supabase), 
+    [supabase]
+  )
+  
+  return (
+    <ServiceContext.Provider value={service}>
+      {children}
+    </ServiceContext.Provider>
+  )
+}
+```
 
-**System Monitoring**:
-- Real-time webhook status
-- Job queue health metrics
-- Failed operation dashboard
-- API quota usage tracking
-- Performance metrics visualization
+### Data Migration Tools
+```typescript
+// scripts/migrateToSupabase.ts
+export const migrateMockDataToSupabase = async () => {
+  const supabase = createClient(
+    process.env.EXPO_PUBLIC_SUPABASE_URL!,
+    process.env.EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
+  )
+  
+  // Create default team
+  const { data: team } = await supabase
+    .from('teams')
+    .insert([{ name: 'Default Team' }])
+    .select()
+    .single()
+    
+  // Migrate users
+  for (const mockUser of MOCK_USERS) {
+    const { data: user } = await supabase
+      .from('users')
+      .insert([{
+        email: mockUser.email,
+        name: mockUser.name,
+        role: mockUser.role,
+        team_id: team.id,
+        timezone: mockUser.timezone
+      }])
+      .select()
+      .single()
+      
+    // Create athlete profile if needed
+    if (mockUser.role === 'athlete') {
+      await supabase
+        .from('athlete_profiles')
+        .insert([{
+          user_id: user.id,
+          team_id: team.id,
+          sport: mockUser.sport,
+          ftp: mockUser.ftp,
+          lthr: mockUser.lthr
+        }])
+    }
+  }
+  
+  // Migrate planned workouts
+  for (const mockWorkout of MOCK_PLANNED_WORKOUTS) {
+    await supabase
+      .from('workouts_planned')
+      .insert([{
+        team_id: team.id,
+        athlete_id: mockWorkout.athleteId,
+        date: mockWorkout.date,
+        discipline: mockWorkout.discipline,
+        title: mockWorkout.title,
+        duration: mockWorkout.duration,
+        notes: mockWorkout.notes,
+        created_by: mockWorkout.createdBy
+      }])
+  }
+  
+  console.log('Migration completed successfully')
+}
+```
 
-**Data Management**:
-- Bulk data export tools
-- Data retention policy enforcement
-- User data deletion (GDPR compliance)
-- Database maintenance tools
+**Deliverables:**
+- [ ] Complete Supabase schema with RLS policies
+- [ ] Service layer switched to real database
+- [ ] Mock data migration scripts
+- [ ] Authentication integration with Supabase Auth
 
-### Mobile App Store Preparation
-**iOS Deployment**:
-- App Store metadata and screenshots
-- Privacy policy and terms of service
-- TestFlight beta distribution
-- App Store review preparation
-- Apple Developer account setup
+### Afternoon: Strava API Integration
 
-**Android Deployment** (Optional):
-- Google Play Console setup
-- APK optimization and signing
-- Play Store metadata
-- Internal testing distribution
+```typescript
+// app/(api)/strava/connect+api.ts
+export async function POST(request: Request) {
+  const { code, state } = await request.json()
+  
+  try {
+    // Exchange code for tokens
+    const tokenResponse = await fetch('https://www.strava.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: process.env.STRAVA_CLIENT_ID,
+        client_secret: process.env.STRAVA_CLIENT_SECRET,
+        code,
+        grant_type: 'authorization_code'
+      })
+    })
+    
+    const tokens = await tokenResponse.json()
+    
+    // Store tokens in Supabase
+    const supabase = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    
+    await supabase
+      .from('athlete_profiles')
+      .update({
+        strava_connected: true,
+        strava_athlete_id: tokens.athlete.id,
+        strava_access_token: tokens.access_token,
+        strava_refresh_token: tokens.refresh_token,
+        strava_token_expires_at: new Date(tokens.expires_at * 1000).toISOString()
+      })
+      .eq('user_id', state) // state contains user ID
+      
+    // Start historical backfill
+    await fetch('/api/strava/backfill', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: state })
+    })
+    
+    return Response.json({ success: true })
+  } catch (error) {
+    console.error('Strava connection error:', error)
+    return Response.json({ error: 'Connection failed' }, { status: 500 })
+  }
+}
 
-### Documentation & Onboarding
-**User Documentation**:
-- Getting started guide
-- Feature tutorials with screenshots
-- FAQ and troubleshooting
-- Video walkthrough recordings
+// app/(api)/strava/webhook+api.ts
+export async function POST(request: Request) {
+  const { object_type, aspect_type, object_id, owner_id } = await request.json()
+  
+  if (object_type !== 'activity') {
+    return Response.json({ success: true }) // Ignore non-activity events
+  }
+  
+  try {
+    // Find athlete by Strava ID
+    const supabase = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    
+    const { data: profile } = await supabase
+      .from('athlete_profiles')
+      .select('*')
+      .eq('strava_athlete_id', owner_id)
+      .single()
+      
+    if (!profile) {
+      return Response.json({ error: 'Athlete not found' }, { status: 404 })
+    }
+    
+    if (aspect_type === 'create' || aspect_type === 'update') {
+      // Fetch activity details and process
+      await processStravaActivity(object_id, profile)
+    } else if (aspect_type === 'delete') {
+      // Remove activity from database
+      await supabase
+        .from('workouts_actual')
+        .delete()
+        .eq('strava_activity_id', object_id)
+    }
+    
+    return Response.json({ success: true })
+  } catch (error) {
+    console.error('Webhook processing error:', error)
+    return Response.json({ error: 'Processing failed' }, { status: 500 })
+  }
+}
 
-**Technical Documentation**:
-- API documentation
-- Deployment guide
-- Environment setup instructions
-- Monitoring runbook
+// utils/stravaProcessor.ts
+export const processStravaActivity = async (
+  activityId: string, 
+  profile: AthleteProfile
+) => {
+  // Fetch activity details from Strava
+  const activity = await fetchStravaActivity(activityId, profile.strava_access_token)
+  
+  // Calculate metrics
+  const metrics = calculateWorkoutMetrics(activity)
+  
+  // Store in database
+  const supabase = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  
+  await supabase
+    .from('workouts_actual')
+    .upsert([{
+      strava_activity_id: activity.id,
+      team_id: profile.team_id,
+      athlete_id: profile.user_id,
+      date: activity.start_date_local.split('T')[0],
+      discipline: mapStravaSport(activity.sport_type),
+      title: activity.name,
+      duration: activity.elapsed_time,
+      distance: activity.distance,
+      summary_metrics: metrics,
+      detailed_data: activity.has_streams ? await fetchActivityStreams(activityId) : null,
+      polyline: activity.map?.polyline
+    }])
+    
+  // Update daily metrics
+  await updateDailyMetrics(profile.user_id, activity.start_date_local.split('T')[0])
+  
+  // Check for personal bests
+  await checkPersonalBests(profile.user_id, activity)
+  
+  // Generate AI summary
+  await generateWorkoutSummary(activityId)
+}
+```
 
-### Performance Targets
-**Latency Requirements**:
-- Page load: <2.5s P95 (web)
-- Workout ingest: <3 minutes end-to-end
-- AI summary generation: <20s
-- Push notification delivery: <30s
+**Deliverables:**
+- [ ] Strava OAuth connection flow
+- [ ] Webhook receiver for real-time activity sync
+- [ ] Activity processing and metrics calculation
+- [ ] Historical backfill implementation
 
-**Scale Requirements**:
-- Support 20 active athletes
-- Handle 40+ workouts/day ingestion
-- Process historical backfill efficiently
-- Maintain 99.5% uptime
+## Day 14: Production Deployment & Optimization
 
-## APIs Completed
-- `POST /api/ai/summarize` (regenerate summaries)
-- `GET /api/admin/users` (user management)
-- `GET /api/admin/metrics` (system health)
-- `POST /api/admin/dlq/retry` (retry failed jobs)
-- `GET /api/admin/audit` (audit log viewer)
-- `POST /api/admin/export` (data export)
+### Morning: Performance Optimization
 
-## Production Deployment Pipeline
-**Infrastructure**:
-- Vercel for web app hosting
-- Supabase for database and auth
-- Capacitor for mobile builds
-- GitHub Actions for CI/CD
+```typescript
+// Performance optimizations
+// hooks/optimizedQueries.ts
+export const useOptimizedAthleteMetrics = (athleteId: string) => {
+  return useQuery({
+    queryKey: ['athlete-metrics', athleteId],
+    queryFn: async () => {
+      const metrics = await trainingService.getAthleteMetrics(athleteId)
+      return {
+        daily: metrics,
+        weekly: groupByWeek(metrics),
+        current: getCurrentMetrics(metrics)
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnWindowFocus: false,
+    retry: 3
+  })
+}
 
-**Environments**:
-- Development (local)
-- Staging (preview deployments)
-- Production (main branch)
+// Real-time subscriptions
+export const useRealtimeWorkouts = (athleteId: string) => {
+  const queryClient = useQueryClient()
+  
+  useEffect(() => {
+    const supabase = createClient()
+    
+    const subscription = supabase
+      .channel(`workouts:${athleteId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'workouts_actual',
+          filter: `athlete_id=eq.${athleteId}`
+        },
+        (payload) => {
+          queryClient.invalidateQueries(['workouts', athleteId])
+          
+          if (payload.eventType === 'INSERT') {
+            showToast({
+              type: 'success',
+              title: 'New Workout Synced',
+              message: 'Activity imported from Strava'
+            })
+          }
+        }
+      )
+      .subscribe()
+      
+    return () => {
+      supabase.removeChannel(subscription)
+    }
+  }, [athleteId, queryClient])
+}
 
-**Deployment Process**:
-1. Code review and testing
-2. Automated build and type checking
-3. Database migration verification
-4. Staging deployment and smoke tests
-5. Production deployment
-6. Health checks and monitoring
+// Image optimization for charts
+export const ChartImage = ({ data, type }: Props) => {
+  const [imageUri, setImageUri] = useState<string>()
+  
+  useEffect(() => {
+    const generateChart = async () => {
+      const chart = createChart(data, type)
+      const uri = await chart.toBase64Image()
+      setImageUri(uri)
+    }
+    
+    generateChart()
+  }, [data, type])
+  
+  if (!imageUri) return <Skeleton height={200} />
+  
+  return <Image source={{ uri: imageUri }} style={{ height: 200 }} />
+}
+```
 
-### Final Testing & QA
-**End-to-End Testing**:
-- Complete user journeys (athlete and coach)
-- Mobile app testing on iOS/Android
-- Performance testing with realistic data
-- Security penetration testing
-- Accessibility audit
+### Production Build Configuration
 
-**Load Testing**:
-- Concurrent user simulation
-- Strava webhook flood testing
-- Database performance under load
-- AI generation rate limiting
+```typescript
+// app.config.ts
+export default {
+  expo: {
+    name: "TrexAI",
+    slug: "trex-ai",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/icon.png",
+    userInterfaceStyle: "dark",
+    splash: {
+      image: "./assets/splash.png",
+      resizeMode: "contain",
+      backgroundColor: "#0A0A0A"
+    },
+    assetBundlePatterns: ["**/*"],
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: "com.company.trexai"
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#0A0A0A"
+      },
+      package: "com.company.trexai"
+    },
+    web: {
+      favicon: "./assets/favicon.png",
+      bundler: "metro"
+    },
+    plugins: [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          icon: "./assets/notification-icon.png",
+          color: "#FAFAFA"
+        }
+      ]
+    ],
+    extra: {
+      eas: {
+        projectId: "your-project-id"
+      }
+    }
+  }
+}
 
-## Launch Readiness Checklist
-- [ ] All features working end-to-end
-- [ ] Performance targets met
-- [ ] Security review completed
-- [ ] Mobile apps approved for distribution
-- [ ] Documentation complete
-- [ ] Monitoring and alerts configured
-- [ ] Backup and disaster recovery tested
-- [ ] Team training completed
+// eas.json
+{
+  "cli": {
+    "version": ">= 7.8.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "production-url",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "production-key"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
+```
 
-## Acceptance Criteria
-1. AI summaries provide valuable coaching insights
-2. Admin tools enable effective platform management
-3. Platform handles target load with good performance
-4. Mobile apps are ready for app store distribution
-5. All monitoring and alerting is functional
-6. Users can be onboarded smoothly with documentation
+### Monitoring & Analytics
 
-## Phase 4 Complete When:
-- Platform is production-ready and scalable
-- AI features add measurable coaching value
-- Admin tools enable autonomous operation
-- Mobile apps are deployed and functional
-- Team is ready for real user onboarding
+```typescript
+// services/analytics.ts
+import * as Sentry from '@sentry/react-native'
+import { Analytics } from '@vercel/analytics/react'
 
-## Post-Launch Considerations
-**Immediate (Week 1)**:
-- Monitor system health and performance
-- Gather user feedback and address critical issues
-- Fine-tune AI prompts based on coach feedback
-- Optimize performance bottlenecks
+export const initializeMonitoring = () => {
+  // Error tracking
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    environment: __DEV__ ? 'development' : 'production',
+    tracesSampleRate: 0.1
+  })
+  
+  // Performance monitoring
+  if (!__DEV__) {
+    Sentry.addGlobalEventProcessor((event) => {
+      if (event.type === 'transaction') {
+        // Filter out noisy transactions
+        if (event.transaction?.includes('Navigation')) {
+          return null
+        }
+      }
+      return event
+    })
+  }
+}
 
-**Short-term (Month 1)**:
-- Analyze usage patterns and engagement metrics
-- Iterate on UI/UX based on real usage
-- Expand AI capabilities (custom prompts, etc.)
-- Enhanced analytics and reporting
+// Track key events
+export const trackEvent = (event: string, properties?: Record<string, any>) => {
+  if (__DEV__) {
+    console.log('📊 Analytics:', event, properties)
+    return
+  }
+  
+  // PostHog tracking
+  posthog.capture(event, properties)
+}
 
-**Medium-term (Months 2-3)**:
-- Multi-tenant support for team expansion
-- Additional device integrations (Garmin, etc.)
-- Advanced workout builder with ERG export
-- Public sharing and social features
+// Key events to track
+export const AnalyticsEvents = {
+  WORKOUT_PLANNED: 'workout_planned',
+  STRAVA_CONNECTED: 'strava_connected',
+  COMMENT_ADDED: 'comment_added',
+  CHART_VIEWED: 'chart_viewed',
+  PERSONAL_BEST: 'personal_best_achieved'
+}
+```
+
+### Afternoon: Final Testing & Deployment
+
+```bash
+# Build and deployment scripts
+# scripts/deploy.sh
+#!/bin/bash
+
+echo "🚀 Starting deployment process..."
+
+# Run tests
+echo "Running tests..."
+npm run test
+
+# Type check
+echo "Type checking..."
+npm run type-check
+
+# Build web
+echo "Building web app..."
+npx expo export --platform web
+
+# Deploy to Vercel
+echo "Deploying to Vercel..."
+vercel deploy --prod
+
+# Build mobile apps
+echo "Building mobile apps..."
+eas build --platform all --non-interactive
+
+echo "✅ Deployment complete!"
+```
+
+**Testing Checklist:**
+```typescript
+// E2E test scenarios
+describe('Production Acceptance Tests', () => {
+  test('Complete user flow', async () => {
+    // 1. Login with Google
+    await loginWithGoogle()
+    
+    // 2. Connect Strava
+    await connectStrava()
+    
+    // 3. View synced workouts
+    await waitForWorkoutsToSync()
+    expect(screen.getByText('Recent Workouts')).toBeVisible()
+    
+    // 4. Plan a workout
+    await planWorkout({
+      discipline: 'run',
+      duration: 60,
+      notes: 'Easy aerobic run'
+    })
+    
+    // 5. Add comment
+    await addComment('Great session today!')
+    
+    // 6. View metrics
+    await navigateToMetrics()
+    expect(screen.getByText('CTL')).toBeVisible()
+  })
+  
+  test('Coach workflow', async () => {
+    await loginAsCoach()
+    await viewAthleteProgress()
+    await createWeeklyPlan()
+    await sendMessageToAthlete()
+  })
+  
+  test('Offline functionality', async () => {
+    await goOffline()
+    await viewCachedWorkouts()
+    await planWorkoutOffline()
+    await goOnline()
+    await waitForSync()
+  })
+})
+```
+
+**Performance Validation:**
+- [ ] Page load times < 2.5s on 3G
+- [ ] Chart rendering < 500ms
+- [ ] Strava sync < 3 minutes end-to-end
+- [ ] Bundle size < 10MB for mobile
+
+**Production Deployment:**
+```bash
+# Web deployment
+npm run build:web
+vercel deploy --prod
+
+# Mobile builds
+eas build --platform ios --profile production
+eas build --platform android --profile production
+
+# Submit to app stores
+eas submit --platform ios
+eas submit --platform android
+```
+
+**Deliverables:**
+- [ ] Production-ready web app deployed
+- [ ] Mobile apps built and submitted
+- [ ] Monitoring and analytics configured
+- [ ] Performance optimized and validated
+
+## Success Criteria
+
+### ✅ Phase 4 Complete When:
+1. **MVP Acceptance Criteria Met**
+   - All athletes can sign in, connect Strava, view plans
+   - Strava workouts sync within 3 minutes P95
+   - Coach can plan, comment, receive weekly digest
+   - AI summaries generated automatically
+   - Push notifications working on mobile
+
+2. **Production Quality**
+   - Error rates < 1%
+   - Performance targets met
+   - Security audit passed
+   - Monitoring dashboards operational
+
+3. **Deployment Successful**
+   - Web app live and accessible
+   - Mobile apps approved and published
+   - Backend scaling handles initial load
+   - Documentation complete
+
+## Final MVP Validation
+
+### Core User Journeys
+```typescript
+// Athlete journey
+1. Sign up with Google ✅
+2. Connect Strava account ✅  
+3. View synced training history ✅
+4. See weekly plan from coach ✅
+5. Receive workout reminders ✅
+6. View performance trends ✅
+7. Comment on workouts ✅
+8. Chat with coach ✅
+
+// Coach journey  
+1. Sign up and get assigned role ✅
+2. View athlete dashboard ✅
+3. Plan weekly workouts ✅
+4. Monitor athlete compliance ✅
+5. Review completed workouts ✅
+6. Add feedback and comments ✅
+7. Receive weekly digest ✅
+8. Clone training plans ✅
+```
+
+### Technical Validation
+- [ ] Database migrations successful
+- [ ] RLS policies protecting data correctly
+- [ ] Strava webhooks receiving events
+- [ ] AI summaries generating within 20s
+- [ ] Real-time updates working via Supabase
+- [ ] Push notifications delivering
+- [ ] Charts rendering on all screen sizes
+- [ ] Offline mode functional
+- [ ] Export/backup working
+
+---
+
+**Estimated Effort**: 16 hours (2 days × 8 hours)  
+**Risk Level**: High (external integrations, production deployment)  
+**Dependencies**: Phases 1-3 completed, accounts configured
+
+*After Phase 4, you'll have a production-ready TrainingPeaks-style platform with real Strava integration, serving athletes and coaches with a beautiful, functional training management system.*

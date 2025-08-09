@@ -68,14 +68,14 @@ Seed & JWT claims (build‑ready)
 Implementation details (build‑ready)
 - Backfill runs with a resumable cursor (last activity start_date) per athlete; persists progress; throttles to ≤80% of app quota with jitter; leaves ≥20% headroom for webhooks/UI.
 - Rate‑limit handling: on HTTP 429, exponential backoff with ceiling at 15 minutes, then park job until next quota window; persist to `jobs_dlq` after 5 failed windows.
-- Webhook verification: verification token stored in environment variables, rotated quarterly; challenge/response implemented per Strava docs; signature (if provided) checked in Next.js API routes.
+- Webhook verification: verification token stored in environment variables, rotated quarterly; challenge/response implemented per Strava docs; signature (if provided) checked in Expo API routes.
 - Idempotency & de‑duplication: upsert on `workouts_actual.strava_activity_id` (unique); webhook events use `event_id` idempotency keys to avoid double processing.
 - Reconciliation job: daily scan compares Strava activity ids for the last 7 days against `workouts_actual`; fetches missing/updated; skips when `source='manual'`.
 
 OAuth deep linking & final redirect (build‑ready)
 - Web: after `strava-connect` completes, redirect to `/settings/connections` in the same session.
 - Mobile: use app scheme `trexai://connections` and universal link `https://app.<domain>/connections` to return to the app.
-- Configure Capacitor deep linking to support both scheme and universal links via capacitor.config.ts.
+- Configure Expo deep linking to support both scheme and universal links via app config and Expo Router.
 
 5.3 Calendar & Planning
 - Weekly calendar view (web: drag‑drop; mobile: add/edit basic).
@@ -164,75 +164,88 @@ Conflict resolution (build‑ready)
 ### 6) UX/UI Requirements
 - Monochrome design only (black/white/gray). No color accents. Use shape, weight, and motion for status.
 - Glassy dark surfaces, subtle depth, high contrast text. Focus rings use white glow.
-- Motion: 120–180ms ease‑out micro‑interactions; spring on drag‑drop; reduced‑motion mode.
-- Accessibility: AA contrast for primary text; visible focus for keyboard users; scalable typography.
+- Motion: 120–180ms ease‑out micro‑interactions; spring physics via Reanimated 3; reduced‑motion mode.
+- Accessibility: AA contrast for primary text; visible focus for keyboard users; scalable typography; Tamagui's built-in accessibility props.
 
-Design Tokens (initial)
-- Colors
-  - background: #0A0A0A
-  - panel: #111111 (with blur on web)
-  - surface: #161616
-  - border: #262626
-  - textPrimary: #FAFAFA
-  - textSecondary: #D4D4D4
-  - muted: #A3A3A3
-  - disabled: #737373
-  - divider: #2E2E2E
+Design Tokens (Tamagui theme)
+```typescript
+// packages/ui/src/tamagui.config.ts
+const tokens = {
+  color: {
+    background: '#0A0A0A',
+    panel: '#111111',
+    surface: '#161616', 
+    border: '#262626',
+    textPrimary: '#FAFAFA',
+    textSecondary: '#D4D4D4',
+    muted: '#A3A3A3',
+    disabled: '#737373',
+    divider: '#2E2E2E',
+  },
+  space: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 },
+  size: { xs: 20, sm: 24, md: 28, lg: 32, xl: 36 },
+  radius: { xs: 4, sm: 8, md: 12, lg: 16 },
+  zIndex: { sheet: 100000, tooltip: 1000, modal: 100 }
+}
+```
 - Chart palette (strokes): #E5E5E5, #CFCFCF, #9F9F9F, #6B6B6B with varied thickness/dash.
 
-Signature Components
-- Weekly calendar with heat‑map tint via grayscale; drag‑drop (web), long‑press plan (mobile).
-- Workout card with discipline iconography (shape) and compliance ring glow in white.
-- Metrics tiles with subtle animated grayscale gradients.
-- Dark charts with thin neon‑white bloom on peaks (grayscale only).
+Signature Components (Tamagui-based)
+- Weekly calendar with heat‑map tint via grayscale; drag‑drop (web), long‑press plan (mobile) using Tamagui gestures.
+- Workout card with discipline iconography (shape) and compliance ring glow in white using Tamagui animations.
+- Metrics tiles with subtle animated grayscale gradients via Tamagui's animation system.
+- Dark charts with thin neon‑white bloom on peaks (grayscale only) using Victory Native with Tamagui theme integration.
 
 ### 7) Technical Architecture (MVP)
-- Client: Next.js 14 (App Router) + Capacitor for mobile; shadcn/ui components; TanStack Query; localStorage/IndexedDB for cache; native push notifications; Charts via Recharts; Motion via Framer Motion.
-- Backend: Supabase (Postgres, Auth, Storage, Realtime) + Next.js API routes for complex logic.
+- Client: Expo SDK 52+ with TypeScript; Expo Router for universal routing; React Native Web for browser rendering; Tamagui for universal UI components and theming; TanStack Query for server state; AsyncStorage/MMKV for persistent cache; native push notifications via Expo Notifications; Charts via Victory Native; Animations via Reanimated 3.
+- Backend: Supabase (Postgres, Auth, Storage, Realtime) + Expo API routes for complex logic.
 - Integrations: Strava OAuth + webhooks.
 - AI: OpenAI API (per‑workout summary + weekly digest), configurable model tier.
-- Hosting: Vercel for web; Capacitor builds for iOS/Android via Xcode Cloud/GitHub Actions.
+- Hosting: Vercel for web (React Native Web build); EAS Build/Submit for iOS/Android app store distribution.
 
 Implementation choices (build‑ready)
-- Router: Next.js App Router with file‑system routing and built‑in API routes.
-- Web target: Static export with API routes for dynamic features; progressive enhancement.
-- UI Framework: shadcn/ui with Tailwind CSS for consistent design system.
+- Router: Expo Router with file‑system routing and universal navigation (web + mobile).
+- Web target: React Native Web with Expo for web, deployed as static site with API routes.
+- UI Framework: Tamagui for universal components, themes, and animations with design tokens.
 - State Management: TanStack Query for server state; Zustand for client state.
 - Type Safety: TypeScript throughout; generated types from Supabase.
 - Package Manager: pnpm for fast, efficient dependency management.
-- Monorepo layout (Turborepo):
-  - `apps/web` — Next.js web app
-  - `apps/mobile` — Capacitor mobile wrapper
-  - `packages/ui` — shared shadcn/ui components
+- Monorepo layout (with workspaces):
+  - `apps/expo` — Expo app (mobile + web via React Native Web)
+  - `packages/ui` — shared Tamagui components and design system
   - `packages/database` — Supabase schema, migrations, types
   - `packages/shared` — shared utilities, types, API clients
+  - `packages/config` — shared config files (TypeScript, ESLint, etc.)
 
 Modern Stack Benefits
-- Single codebase: Next.js + Capacitor allows sharing 95%+ code between web/mobile.
-- Fast setup: `npx create-turbo@latest` + `npx shadcn-ui@latest init` gets you started in minutes.
+- True universal codebase: Expo + React Native Web shares 100% component code between platforms.
+- Mobile-first: Expo provides best-in-class mobile development with web as a first-class target.
+- Fast setup: `create-expo-app` + Tamagui gets you started with universal design system in minutes.
 - Type safety: End-to-end TypeScript with generated database types.
-- Developer experience: Hot reload, fast builds, excellent debugging.
-- Production ready: Vercel deployment, Capacitor app store builds, all battle-tested.
+- Developer experience: Fast Refresh, Metro bundler, excellent debugging, OTA updates.
+- Production ready: EAS Build for app stores, Vercel for web, all battle-tested.
 
 Quick Setup Guide
 ```bash
-# 1. Initialize Turborepo
-npx create-turbo@latest trex-ai
+# 1. Create Expo app with TypeScript
+npx create-expo-app@latest trex-ai --template
 
-# 2. Setup Next.js web app
-cd trex-ai/apps/web
-npx shadcn@latest init
+# 2. Setup monorepo structure
+cd trex-ai
+pnpm init
+mkdir -p packages/{ui,database,shared,config}
 
-# 3. Setup Supabase
+# 3. Setup Tamagui
+npx @tamagui/cli@latest init
+
+# 4. Setup Supabase
 npx supabase init
 npx supabase start
 
-# 4. Setup mobile app
-cd ../mobile
-npm create @capacitor/app
+# 5. Setup Expo Router
+npx expo install expo-router expo-linking expo-constants expo-status-bar
 
-# 5. Install dependencies and start dev
-cd ../..
+# 6. Install dependencies and start dev
 pnpm install
 pnpm dev
 ```
@@ -295,14 +308,14 @@ Row Level Security (RLS)
 
 ### 9) APIs (representative)
 - POST /auth/ssologin (Supabase hosted)
-- GET/POST /api/strava/connect (Next.js API route)
-- POST /api/strava/webhook (Next.js API route)
-- GET /api/calendar?athlete_id&week
-- POST /api/plans (create/update planned workouts)
-- GET /api/workouts/:id (detail with metrics, comments, AI summary)
-- POST /api/comments
-- POST /api/notifications/test (admin)
-- POST /api/ai/summarize (regenerate)
+- GET/POST /(api)/strava/connect+api.ts (Expo API route)
+- POST /(api)/strava/webhook+api.ts (Expo API route)
+- GET /(api)/calendar+api.ts?athlete_id&week
+- POST /(api)/plans+api.ts (create/update planned workouts)
+- GET /(api)/workouts/[id]+api.ts (detail with metrics, comments, AI summary)
+- POST /(api)/comments+api.ts
+- POST /(api)/notifications/test+api.ts (admin)
+- POST /(api)/ai/summarize+api.ts (regenerate)
 
 ### 10) Computation Specs
 TSS/IF
@@ -369,15 +382,15 @@ PII & retention (build‑ready)
 - Targets: P95 page load < 2.5s web, 60fps interactions; ingest freshness ≤ 3 minutes; AI summary ≤ 20s.
 
 ### 15) Delivery Plan (2 Weeks)
-- Day 1–2: Project scaffold (Next.js + Capacitor + Turborepo), Supabase schema/RLS, Google SSO, roles.
+- Day 1–2: Project scaffold (Expo + Tamagui + monorepo), Supabase schema/RLS, Google SSO, roles.
 - Day 3–4: Strava OAuth/connect + historical backfill; webhook receiver; activity storage.
 - Day 5–6: Metrics pipeline (TSS/IF; CTL/ATL/TSB), daily rollups, PB detection.
-- Day 7–8: Calendar (web drag‑drop; mobile CRUD), plan↔actual linking, compliance.
-- Day 9: Comments/chat (Realtime), notifications.
+- Day 7–8: Calendar (universal gestures; Tamagui components), plan↔actual linking, compliance.
+- Day 9: Comments/chat (Realtime), notifications via Expo Notifications.
 - Day 10: Coach board (multi‑athlete, clone week), annotations.
 - Day 11: AI per‑workout summaries; weekly digest cron.
 - Day 12: Admin panel + audit; exports.
-- Day 13–14: Polish, QA, app store builds + web deploy, onboarding guide.
+- Day 13–14: Polish, QA, EAS builds + Vercel web deploy, onboarding guide.
 
 ### 16) Risks & Mitigations
 - Strava rate limits/webhook gaps → caching, backoff/retry, DLQ, daily reconciliation.
@@ -427,16 +440,16 @@ RESOLVED ADDITIONS (see referenced sections)
 - Keep concise, emoji‑light; rely on typography and layout, not color.
 
 ### 20) Environments & Credentials
-- Environments: separate staging and production for Supabase, Strava apps, Sentry, PostHog, and Vercel; mobile builds via Capacitor + CI/CD.
-- Secrets management: source of truth in 1Password; injected into Vercel environment variables and Supabase; local development via `.env.local` (never committed).
+- Environments: separate staging and production for Supabase, Strava apps, Sentry, PostHog, and Vercel; mobile builds via EAS Build + CI/CD.
+- Secrets management: source of truth in 1Password; injected into Vercel environment variables, EAS secrets, and Supabase; local development via `.env.local` (never committed).
 - Supabase: capture `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` per environment.
 - Strava: `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_VERIFY_TOKEN`; scopes `read`, `activity:read_all`; redirect and webhook URLs per environment.
 - OpenAI: `OPENAI_API_KEY` (model starts with cost‑efficient GPT‑4o‑mini class; upgradable).
 - Sentry: `SENTRY_DSN` per app (mobile/web/api) and environment.
 - Product analytics: PostHog `POSTHOG_KEY` and `POSTHOG_HOST`; events only (no autocapture).
-- Push (iOS): Apple Developer Program, bundle IDs `com.company.trexai` (prod) and `com.company.trexai.staging`; APNs Auth Key (.p8), Key ID, Team ID configured in Capacitor.
-- Push (Android optional): Firebase project and FCM server key; configured in Capacitor when enabling Android.
-- DNS: `app.<domain>` → Vercel; APIs via Next.js API routes (no custom domain required for MVP).
+- Push (iOS): Apple Developer Program, bundle IDs `com.company.trexai` (prod) and `com.company.trexai.staging`; APNs Auth Key (.p8), Key ID, Team ID configured in Expo app config.
+- Push (Android optional): Firebase project and FCM server key; configured in Expo app config when enabling Android.
+- DNS: `app.<domain>` → Vercel; APIs via Expo API routes (no custom domain required for MVP).
 
 Linking & OAuth
 - App scheme: `trexai`.
@@ -447,9 +460,9 @@ Web deploy
 - Vercel: SPA static export; preview deployments for each PR.
 
 CI/CD
-- GitHub Actions: typecheck/lint/test on PR; build Next.js and run Supabase SQL formatting check.
+- GitHub Actions: typecheck/lint/test on PR; build Expo web and run Supabase SQL formatting check.
 - Supabase migrations: plan/apply via CI to staging on merge; manual promotion to prod.
-- Mobile builds: Capacitor builds triggered on release tags.
+- Mobile builds: EAS Build triggered on release tags; EAS Submit for app store distribution.
 
 Seeding
 - On first environment bootstrap, create default `teams` row and assign first user as `Master` with that `team_id`.
@@ -461,5 +474,5 @@ Presence
 - Supabase Realtime presence enabled for `threads` channels.
 
 Repo conventions
-- Turborepo monorepo as defined in 7) with pnpm workspace package manager.
+- pnpm workspace monorepo as defined in 7) with Expo for universal development.
 

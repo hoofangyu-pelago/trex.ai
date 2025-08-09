@@ -1,135 +1,93 @@
-# Turborepo starter
+# trex.ai — Expo + Tamagui app
 
-This Turborepo starter is maintained by the Turborepo core team.
+This is an [Expo](https://expo.dev) project using [Expo Router](https://docs.expo.dev/router/introduction) and [Tamagui](https://tamagui.dev) with a monochrome theme and mock authentication/data.
 
-## Using this example
+## Get started
 
-Run the following command:
+1. Install dependencies
 
-```sh
-npx create-turbo@latest
+   ```bash
+   npm install
+   ```
+
+2. Start the app
+
+   ```bash
+   # General
+   npx expo start
+
+   # Web (recommended for quick preview)
+   npm run web
+
+   # iOS Simulator
+   npm run ios
+
+   # Android Emulator
+   npm run android
+   ```
+
+In the output, you'll find options to open the app in a
+
+- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+
+You can start developing by editing the files inside the `app/` directory. This project uses file-based routing.
+
+## Features implemented
+
+- Expo Router structure with protected `(app)` and public `(auth)` segments
+  - Tabs: `Home`, `Calendar`, `Activities`, `Profile`
+  - Detail routes: `workout/[id]`, coach views under `coach/*` (placeholders)
+- Mock authentication provider and hook (`providers/AuthProvider.tsx`, `hooks/useAuth.ts`)
+  - Protected routes via `app/(app)/_layout.tsx`
+- UI System with Tamagui components
+  - `Button`, `Card`, `Typography`, `Layout/Screen`, `LoadingSpinner`
+  - Monochrome theme tokens in `tamagui.config.ts`
+- Training Calendar screen
+  - Month/Week views on web, Day view on mobile
+  - Navigation controls (Prev/Today/Next)
+  - Mock calendar/workout data (`data/mockCalendar.ts`)
+- Activities screen
+  - Monthly summary cards and workout list items
+  - Generated mock workouts (~2–3 months) in `data/mockWorkouts.ts`
+- Profile screen showing current user info with Sign Out
+- TypeScript strict mode and path alias `@/*`
+
+## Mock accounts
+
+- `athlete@example.com`
+- `coach@example.com`
+
+On the login screen, enter one of the emails above and press Continue.
+
+## Tech notes
+
+- Router typed routes enabled in `app.json` (`experiments.typedRoutes: true`)
+- Babel plugins: only `react-native-reanimated/plugin` (do not add `expo-router/babel` on SDK 50+)
+- App icons, favicon and splash images configured under `assets/images/*`
+
+## Get a fresh project
+
+When you're ready, run:
+
+```bash
+npm run reset-project
 ```
 
-## What's inside?
+This command will move the starter code to the `app-example` directory and create a blank `app` directory where you can start developing.
 
-This Turborepo includes the following packages/apps:
+## Learn more
 
-### Apps and Packages
+To learn more about developing your project with Expo, look at the following resources:
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
+- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+## Join the community
 
-### Utilities
+Join our community of developers creating universal apps.
 
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
-
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
+- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

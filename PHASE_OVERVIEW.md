@@ -1,59 +1,120 @@
-# TrainingPeaks-Style Platform - Development Phases Overview
+# TrainingPeaks-style Platform - Implementation Phase Overview
 
-## Phase Breakdown Strategy
+## Frontend-First Development Strategy
 
-This PRD has been broken down into 4 logical development phases that build upon each other. Each phase delivers working functionality while setting up the foundation for subsequent phases.
+This implementation plan follows a **frontend-first approach** with mock data, allowing rapid iteration on UX/UI before backend complexity. Each phase builds incrementally toward the full-featured training platform.
 
-## Phase Dependencies
+## Phase Structure
+
+### **Phase 1: Foundation & UI System** (Days 1-4)
+- **Focus**: Project scaffold, design system, core navigation
+- **Deliverable**: Functional Expo app with Tamagui, routing, and auth UI
+- **Backend**: None (mock auth states)
+
+### **Phase 2: Training Data & Visualizations** (Days 5-8)
+- **Focus**: Workout displays, metrics, charts, calendar UI
+- **Deliverable**: Rich training data visualization with mock datasets
+- **Backend**: None (comprehensive mock data)
+
+### **Phase 3: Coach Tools & Interactions** (Days 9-12)
+- **Focus**: Planning, comments, notifications, coach workflows
+- **Deliverable**: Full coach experience with offline-capable interactions
+- **Backend**: Local storage simulation
+
+### **Phase 4: Backend Integration & Production** (Days 13-14)
+- **Focus**: Supabase integration, Strava API, real data flow
+- **Deliverable**: Production-ready app with live data
+- **Backend**: Full implementation
+
+## Key Benefits of This Approach
+
+1. **Rapid Visual Progress**: Stakeholders see working UI immediately
+2. **UX Validation**: Test workflows before expensive backend work
+3. **Parallel Development**: Backend can be built while frontend is being refined
+4. **Risk Mitigation**: UI/UX issues discovered early when changes are cheap
+5. **Demo Ready**: Each phase produces a demonstrable milestone
+
+## Mock Data Strategy
+
+### **Rich Realistic Data**
+- **Athletes**: 5-6 diverse athlete profiles with different sports and levels
+- **Workouts**: 3+ months of varied training data per athlete
+- **Metrics**: Realistic TSS, CTL/ATL/TSB progressions with seasonal patterns
+- **Comments**: Coach-athlete interactions, feedback examples
+- **PBs**: Progressive improvement stories
+
+### **Edge Cases Included**
+- Missing data scenarios (no HR, no power)
+- Failed/incomplete workouts
+- Overdue sessions
+- Travel/timezone changes
+- Different sports and disciplines
+
+### **Data Evolution**
+- Phase 2: Static mock data files
+- Phase 3: Dynamic mock data with simulated changes
+- Phase 4: Gradual replacement with real Supabase/Strava data
+
+## Technical Architecture Evolution
 
 ```
-Phase 1 (Foundation) 
-    ↓
-Phase 2 (Training Data) 
-    ↓  
-Phase 3 (Coach Tools)
-    ↓
-Phase 4 (Advanced Features)
+Phase 1: Expo + Tamagui + Mock Auth
+         ↓
+Phase 2: + Victory Charts + Mock Training Data
+         ↓  
+Phase 3: + TanStack Query + Local Storage Simulation
+         ↓
+Phase 4: + Supabase + Strava API + Real Backend
 ```
 
-## Phase Summary
+## Success Criteria Per Phase
 
-### Phase 1: Foundation & Core Infrastructure (Days 1-4)
-**Goal**: Establish the basic platform with authentication, database, and Strava integration.
-**Deliverable**: Users can sign in, connect Strava, and see basic workout data.
+### **Phase 1 Complete When:**
+- ✅ App runs on web and mobile
+- ✅ Tamagui theme applied consistently  
+- ✅ Navigation works across all screens
+- ✅ Mock authentication flow complete
 
-### Phase 2: Training Data & Analytics (Days 5-8) 
-**Goal**: Build the metrics engine and training analytics that power the platform.
-**Deliverable**: Full workout analysis with TSS/IF, CTL/ATL/TSB trends, and PB tracking.
+### **Phase 2 Complete When:**
+- ✅ Calendar displays training weeks
+- ✅ Workout details show metrics and charts
+- ✅ Athlete dashboard shows trends
+- ✅ All visualizations working with mock data
 
-### Phase 3: Coach Tools & Collaboration (Days 9-11)
-**Goal**: Enable coaching workflow with planning, feedback, and communication tools.
-**Deliverable**: Complete coach-athlete interaction with planning, comments, and notifications.
+### **Phase 3 Complete When:**
+- ✅ Coach can create/edit plans
+- ✅ Comments and chat functional
+- ✅ Notifications working (mock)
+- ✅ Multi-athlete views operational
 
-### Phase 4: Advanced Features & Polish (Days 12-14)
-**Goal**: Add AI features, admin tools, and production readiness.
-**Deliverable**: Full-featured platform ready for production deployment.
+### **Phase 4 Complete When:**
+- ✅ Strava integration working
+- ✅ Real-time data sync
+- ✅ Production deployment successful
+- ✅ All MVP acceptance criteria met
 
-## Benefits of This Breakdown
+## File Organization
 
-1. **Early Value**: Each phase delivers working functionality
-2. **Risk Mitigation**: Core features built first, advanced features last
-3. **Dependency Management**: Natural flow from infrastructure to features
-4. **Testing Opportunities**: Can validate with users after each phase
-5. **Flexibility**: Can adjust scope of later phases based on early feedback
+```
+trex-ai/
+├── app/                    # Expo Router screens
+├── components/             # Tamagui UI components  
+├── data/                   # Mock data files (Phases 1-3)
+├── hooks/                  # Custom React hooks
+├── providers/              # Context providers
+├── services/               # API services (mock → real)
+├── types/                  # TypeScript definitions
+└── utils/                  # Helper functions
+```
 
-## Cross-Phase Considerations
+## Next Steps
 
-- **Design System**: Monochrome design tokens implemented in Phase 1, applied throughout
-- **Security**: RLS policies established in Phase 1, extended in each phase
-- **Performance**: Caching and optimization considered from Phase 1
-- **Mobile**: Capacitor setup in Phase 1, mobile-specific features throughout
+1. **Start with Phase 1**: Foundation setup
+2. **Iterate Quickly**: Daily demos and feedback
+3. **Maintain Momentum**: Each phase should feel substantial but achievable
+4. **Document Decisions**: Key architectural choices and rationale
+5. **Prepare for Scale**: Code structure that supports real backend integration
 
-## Success Criteria by Phase
+---
 
-- **Phase 1**: Authentication working, Strava data flowing, basic UI functional
-- **Phase 2**: Metrics computed correctly, charts displaying trends, PBs detected
-- **Phase 3**: Coach can plan and review, athletes receive notifications, comments working
-- **Phase 4**: AI summaries generating, admin tools functional, ready for production
-
-Each phase includes specific acceptance criteria and testing requirements detailed in the individual phase files.
+*This phased approach ensures we build exactly what users need while maintaining development velocity and reducing technical risk.*
