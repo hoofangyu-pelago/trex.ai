@@ -1,10 +1,12 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from 'tamagui';
 
 export default function OnboardingScreen() {
+  const theme = useTheme();
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Onboarding</Text>
-      <Text style={styles.subtitle}>Coming soon…</Text>
+    <View style={[styles.container, { backgroundColor: theme.background.val }]}>
+      <Text style={[styles.title, { color: theme.textPrimary.val }]}>Onboarding</Text>
+      <Text style={[styles.subtitle, { color: theme.textSecondary.val }]}>Coming soon…</Text>
     </View>
   );
 }
@@ -14,9 +16,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0A0A0A',
   },
-  title: { color: '#FAFAFA', fontSize: 24, fontWeight: '700' },
-  subtitle: { color: '#D4D4D4', marginTop: 8 },
+  title: { fontSize: 24, fontWeight: '700' },
+  subtitle: { marginTop: 8 },
 });
 

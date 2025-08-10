@@ -1,0 +1,162 @@
+{
+    "design_system": {
+      "style": {
+        "theme": "dark_mode",
+        "color_palette": {
+          "background": "#000000",
+          "surface": "#111111",
+          "surface_alt": "#1a1a1a",
+          "primary_text": "#ffffff",
+          "secondary_text": "#a1a1a1",
+          "accent": "#ffffff",
+          "chart_primary": "#ffffff",
+          "chart_secondary": "#888888",
+          "chart_fill_1": "#ffb74d",
+          "chart_fill_2": "#1976d2"
+        },
+        "typography": {
+          "font_family": "sans-serif",
+          "font_weights": {
+            "regular": 400,
+            "medium": 500,
+            "bold": 700
+          },
+          "title_size": "1.25rem",
+          "subtitle_size": "1rem",
+          "body_size": "0.875rem",
+          "label_size": "0.75rem"
+        },
+        "spacing": {
+          "padding_base": "1rem",
+          "padding_card": "1.25rem",
+          "gap_small": "0.5rem",
+          "gap_medium": "1rem",
+          "gap_large": "1.5rem"
+        },
+        "border_radius": {
+          "small": "0.5rem",
+          "medium": "0.75rem",
+          "large": "1rem"
+        },
+        "shadows": {
+          "card_shadow": "0 2px 8px rgba(0, 0, 0, 0.3)"
+        }
+      },
+      "layout": {
+        "grid": {
+          "columns": 12,
+          "gap": "1rem",
+          "responsive_breakpoints": {
+            "mobile": "0-640px",
+            "tablet": "641-1024px",
+            "desktop": "1025px+"
+          }
+        },
+        "sections": [
+          "navigation_sidebar",
+          "header_bar",
+          "main_content_area",
+          "stat_cards",
+          "data_visualizations",
+          "forms",
+          "tables",
+          "chat_widget"
+        ]
+      },
+      "components": {
+        "navigation_sidebar": {
+          "type": "vertical_nav",
+          "width": "240px",
+          "background": "surface_alt",
+          "items": [
+            { "icon": "dashboard", "label": "Dashboard" },
+            { "icon": "chart", "label": "Analytics" }
+          ],
+          "active_item_style": {
+            "background": "#1f1f1f",
+            "text_color": "primary_text"
+          }
+        },
+        "header_bar": {
+          "height": "60px",
+          "background": "surface_alt",
+          "elements": ["page_title", "search", "theme_toggle", "profile_menu"]
+        },
+        "stat_card": {
+          "background": "surface",
+          "border_radius": "medium",
+          "padding": "padding_card",
+          "content_structure": ["title", "value", "trend_indicator", "mini_chart"]
+        },
+        "chart": {
+          "line_chart": {
+            "line_thickness": 2,
+            "dot_radius": 3,
+            "colors": ["chart_primary", "chart_secondary"]
+          },
+          "bar_chart": {
+            "bar_width": "8px",
+            "spacing": "4px",
+            "colors": ["accent"]
+          },
+          "area_chart": {
+            "gradient": true,
+            "gradient_colors": ["chart_fill_1", "chart_fill_2"]
+          }
+        },
+        "form": {
+          "input_fields": {
+            "background": "#1a1a1a",
+            "border_radius": "small",
+            "border": "1px solid #333333",
+            "text_color": "primary_text"
+          },
+          "buttons": {
+            "primary": {
+              "background": "accent",
+              "text_color": "#000000",
+              "border_radius": "small",
+              "padding": "0.75rem 1rem"
+            },
+            "secondary": {
+              "background": "transparent",
+              "border": "1px solid accent",
+              "text_color": "accent"
+            }
+          }
+        },
+        "table": {
+          "header_background": "surface_alt",
+          "row_hover_background": "#1f1f1f",
+          "text_color": "primary_text",
+          "divider_color": "#2a2a2a"
+        },
+        "chat_widget": {
+          "message_bubbles": {
+            "incoming": {
+              "background": "#1a1a1a",
+              "text_color": "primary_text"
+            },
+            "outgoing": {
+              "background": "accent",
+              "text_color": "#000000"
+            }
+          }
+        }
+      },
+      "interaction_patterns": {
+        "hover": {
+          "card_shadow_increase": true,
+          "background_lighten": true
+        },
+        "active": {
+          "element_scale": "0.98"
+        },
+        "transitions": {
+          "duration": "0.2s",
+          "easing": "ease-in-out"
+        }
+      }
+    }
+  }
+  

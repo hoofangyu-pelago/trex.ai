@@ -1,4 +1,4 @@
-import { XStack, YStack, View } from 'tamagui';
+import { XStack, YStack, View, useTheme } from 'tamagui';
 import { Card } from '@/components/ui/Card';
 import { H2, Text } from '@/components/ui/Typography';
 import type { MockWorkout } from '@/data/mockWorkouts';
@@ -24,22 +24,23 @@ function formatDuration(mins: number) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-function iconFor(discipline: MockWorkout['discipline']) {
+function iconFor(discipline: MockWorkout['discipline'], color: string) {
   switch (discipline) {
     case 'run':
-      return <Ionicons name="walk-outline" size={20} color="#D4D4D4" />;
+      return <Ionicons name="walk-outline" size={20} color={color} />;
     case 'bike':
-      return <Ionicons name="bicycle-outline" size={20} color="#D4D4D4" />;
+      return <Ionicons name="bicycle-outline" size={20} color={color} />;
     case 'swim':
-      return <Ionicons name="water-outline" size={20} color="#D4D4D4" />;
+      return <Ionicons name="water-outline" size={20} color={color} />;
     case 'strength':
-      return <Ionicons name="barbell-outline" size={20} color="#D4D4D4" />;
+      return <Ionicons name="barbell-outline" size={20} color={color} />;
     default:
       return null;
   }
 }
 
 export function WorkoutListItem({ workout }: Props) {
+  const theme = useTheme();
   const primary = formatDistance(workout) || workout.title;
   return (
     <Card>
@@ -50,7 +51,7 @@ export function WorkoutListItem({ workout }: Props) {
           <Text color="$textSecondary">{formatDuration(workout.duration)}{workout.discipline !== 'strength' && workout.distance ? '' : ''}</Text>
           <Text>{workout.title}</Text>
         </YStack>
-        <View>{iconFor(workout.discipline)}</View>
+        <View>{iconFor(workout.discipline, theme.textSecondary.val)}</View>
       </XStack>
     </Card>
   );

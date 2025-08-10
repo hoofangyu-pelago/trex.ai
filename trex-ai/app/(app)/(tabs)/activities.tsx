@@ -5,7 +5,7 @@ import { H2, Text } from '@/components/ui/Typography';
 import { MOCK_WORKOUTS, MockWorkout } from '@/data/mockWorkouts';
 import { MonthlySummaryCard } from '@/components/summary/MonthlySummaryCard';
 import { WorkoutListItem } from '@/components/workouts/WorkoutListItem';
-import { YStack } from 'tamagui';
+import { YStack, useTheme } from 'tamagui';
 
 function groupByMonth(items: MockWorkout[]): Record<string, MockWorkout[]> {
   return items.reduce<Record<string, MockWorkout[]>>((acc, w) => {
@@ -17,11 +17,12 @@ function groupByMonth(items: MockWorkout[]): Record<string, MockWorkout[]> {
 }
 
 export default function ActivitiesScreen() {
+  const theme = useTheme();
   const months = groupByMonth(MOCK_WORKOUTS);
   const monthKeys = Object.keys(months).sort((a, b) => (a < b ? 1 : -1));
 
   return (
-    <ScrollView style={{ backgroundColor: '#0A0A0A' }} contentContainerStyle={{ padding: 16 }}>
+    <ScrollView style={{ backgroundColor: theme.background.val }} contentContainerStyle={{ padding: 16 }}>
       <Screen padding={0} gap="$3" minHeight="100vh">
         {monthKeys.map((month) => (
           <YStack key={month} gap="$3">

@@ -1,11 +1,13 @@
 import { createTamagui, createFont, createTokens } from 'tamagui';
+// Using Expo-loaded font family names declared in app/_layout.tsx
+
 
 const bodyFont = createFont({
-  family: 'Inter_400Regular',
+  family: 'Geist_400_Regular',
   face: {
-    400: { normal: 'Inter_400Regular' },
-    500: { normal: 'Inter_500Medium' },
-    700: { normal: 'Inter_700Bold' },
+    400: { normal: 'Geist_400_Regular' },
+    500: { normal: 'Geist_500_Medium' },
+    700: { normal: 'Geist_700_Bold' },
   },
   size: {
     1: 12,
@@ -48,6 +50,8 @@ const bodyFont = createFont({
 
 const tokens = createTokens({
   color: {
+    // Base palette tokens (not theme-specific). Theme objects below provide final values.
+    // Kept for potential usage in non-themed places.
     background: '#0A0A0A',
     panel: '#111111',
     surface: '#161616',
@@ -57,6 +61,16 @@ const tokens = createTokens({
     muted: '#A3A3A3',
     disabled: '#737373',
     divider: '#2E2E2E',
+    primary: '#FFFFFF',
+    primaryForeground: '#000000',
+    secondary: '#232323',
+    secondaryForeground: '#FFFFFF',
+    accent: '#2A2A2A',
+    accentForeground: '#FFFFFF',
+    destructive: '#F87171',
+    destructiveForeground: '#000000',
+    input: '#1F1F1F',
+    ring: '#BFBFBF',
   },
   size: {
     0: 0,
@@ -105,16 +119,59 @@ const tokens = createTokens({
 
 const config = createTamagui({
   themes: {
+    // Light theme based on design.md
+    light: {
+      background: '#FCFCFC', // oklch(0.99 0 0)
+      panel: '#FFFFFF', // card
+      surface: '#F9F9F9', // popover
+      border: '#ECECEC', // oklch(0.92 0 0)
+      textPrimary: '#000000', // foreground
+      textSecondary: '#525252', // muted-foreground approx
+      muted: '#F7F7F7',
+      disabled: '#9CA3AF',
+      divider: '#E5E5E5',
+      primary: '#000000',
+      primaryForeground: '#FFFFFF',
+      secondary: '#F0F0F0',
+      secondaryForeground: '#000000',
+      accent: '#F0F0F0',
+      accentForeground: '#000000',
+      destructive: '#EF4444',
+      destructiveForeground: '#FFFFFF',
+      input: '#F0F0F0',
+      ring: '#000000',
+      chart1: '#22c55e',
+      chart2: '#6366f1',
+      chart3: '#bfbfbf',
+      chart4: '#e5e5e5',
+      chart5: '#8f8f8f',
+    },
+    // Dark theme based on deisgn.json
     dark: {
-      background: tokens.color.background,
-      panel: tokens.color.panel,
-      surface: tokens.color.surface,
-      border: tokens.color.border,
-      textPrimary: tokens.color.textPrimary,
-      textSecondary: tokens.color.textSecondary,
-      muted: tokens.color.muted,
-      disabled: tokens.color.disabled,
-      divider: tokens.color.divider,
+      background: '#000000',
+      panel: '#111111',
+      surface: '#1a1a1a',
+      border: '#333333',
+      textPrimary: '#ffffff',
+      textSecondary: '#a1a1a1',
+      muted: '#a1a1a1',
+      disabled: '#737373',
+      divider: '#2a2a2a',
+      primary: '#ffffff',
+      primaryForeground: '#000000',
+      secondary: 'transparent',
+      secondaryForeground: '#ffffff',
+      accent: '#ffffff',
+      accentForeground: '#000000',
+      destructive: '#F87171',
+      destructiveForeground: '#000000',
+      input: '#1a1a1a',
+      ring: '#333333',
+      chart1: '#ffffff',
+      chart2: '#888888',
+      chart3: '#ffb74d',
+      chart4: '#1976d2',
+      chart5: '#a1a1a1',
     },
   },
   tokens,

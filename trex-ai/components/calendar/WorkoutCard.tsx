@@ -1,4 +1,4 @@
-import { XStack, YStack, View } from 'tamagui';
+import { XStack, YStack, View, useTheme } from 'tamagui';
 import { H3, Text } from '@/components/ui/Typography';
 
 export type WorkoutCardProps = {
@@ -11,6 +11,7 @@ export type WorkoutCardProps = {
 };
 
 export function WorkoutCard({ title, discipline, durationMin, distanceKm, bpmAvg, load }: WorkoutCardProps) {
+  const theme = useTheme();
   return (
     <YStack
       backgroundColor="$surface"
@@ -30,7 +31,7 @@ export function WorkoutCard({ title, discipline, durationMin, distanceKm, bpmAvg
         {bpmAvg ? ` • ${bpmAvg} bpm` : ''}
       </Text>
       <View height={6} borderRadius={6} overflow="hidden" backgroundColor="$panel" borderColor="$border" borderWidth={1}>
-        <View height={4} margin={1} borderRadius={4} width="60%" backgroundColor="#22c55e" />
+        <View height={4} margin={1} borderRadius={4} width="60%" backgroundColor={theme.chart1?.val ?? '#22c55e'} />
       </View>
     </YStack>
   );

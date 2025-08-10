@@ -2,7 +2,7 @@ export const MOCK_USERS = [
   {
     id: '1',
     email: 'athlete@example.com',
-    name: 'Sarah Johnson',
+    name: 'Adarsh',
     role: 'athlete',
     sport: 'triathlon',
     timezone: 'America/New_York',

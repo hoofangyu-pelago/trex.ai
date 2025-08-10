@@ -1,14 +1,18 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from 'tamagui';
+import { Platform } from 'react-native';
 
 export default function TabsLayout() {
+  const theme = useTheme();
+  const isWeb = Platform.OS === 'web';
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: '#111111', borderTopColor: '#262626' },
-        tabBarActiveTintColor: '#FAFAFA',
-        tabBarInactiveTintColor: '#A3A3A3',
+        tabBarStyle: { backgroundColor: theme.panel.val, borderTopColor: theme.border.val },
+        tabBarActiveTintColor: theme.textPrimary.val,
+        tabBarInactiveTintColor: theme.muted.val,
       }}
     >
       <Tabs.Screen
@@ -32,6 +36,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="activities"
         options={{
+          // Hide on web completely from linking and tab bar
+          href: isWeb ? null : undefined,
           title: 'Activities',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="barbell-outline" color={color} size={size} />

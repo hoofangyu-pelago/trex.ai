@@ -4,7 +4,7 @@ import { Screen } from '@/components/ui/Layout';
 import { Card } from '@/components/ui/Card';
 import { H2, Text } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
-import { XStack, YStack, View } from 'tamagui';
+import { XStack, YStack, View, useTheme } from 'tamagui';
 import { Ionicons } from '@expo/vector-icons';
 import { DayColumn } from '@/components/calendar/DayColumn';
 import {
@@ -22,6 +22,7 @@ import {
 import { getMockMonthData, getMockMonthWorkouts } from '@/data/mockCalendar';
 
 export default function CalendarScreen() {
+  const theme = useTheme();
   const isWeb = Platform.OS === 'web';
   const defaultView: CalendarView = isWeb ? 'week' : 'day';
   const [view, setView] = useState<CalendarView>(defaultView);
@@ -44,35 +45,61 @@ export default function CalendarScreen() {
     : { minWidth: 48, minHeight: 48, paddingVertical: 10 as const, paddingHorizontal: 10 as const };
 
   return (
-    <ScrollView style={{ backgroundColor: '#0A0A0A' }} contentContainerStyle={{ padding: 16 }}>
+    <ScrollView style={{ backgroundColor: theme.background.val }} contentContainerStyle={{ padding: 16 }}>
       <Screen padding={0} gap="$3" minHeight="100vh">
         <H2>Training Calendar</H2>
         <XStack gap="$2" alignItems="center" justifyContent="space-between">
           <XStack gap="$2">
             {isWeb ? (
-              <>
-                <Button appearance="secondary" onPress={() => setView('month')} width={80} height={44}>Month</Button>
-                <Button appearance="secondary" onPress={() => setView('week')} width={80} height={44}>Week</Button>
-              </>
+              <XStack
+                borderRadius={999}
+                overflow="hidden"
+                borderWidth={1}
+                borderColor="$border"
+                backgroundColor="$panel"
+              >
+                <Button
+                  onPress={() => setView('month')}
+                  height={44}
+                  minWidth={90}
+                  flex={1}
+                  borderWidth={0}
+                  backgroundColor={view === 'month' ? '$accent' : 'transparent'}
+                  color={view === 'month' ? '$primaryForeground' : '$textSecondary'}
+                >
+                  Month
+                </Button>
+                <Button
+                  onPress={() => setView('week')}
+                  height={44}
+                  minWidth={90}
+                  flex={1}
+                  borderWidth={0}
+                  backgroundColor={view === 'week' ? '$accent' : 'transparent'}
+                  color={view === 'week' ? '$primaryForeground' : '$textSecondary'}
+                >
+                  Week
+                </Button>
+              </XStack>
             ) : (
               <Text color="$textSecondary">Day</Text>
             )}
           </XStack>
           <XStack gap="$2">
-            <Button appearance="secondary" onPress={goPrev} accessibilityLabel="Previous" {...iconBtnProps}>
-              <Ionicons name="chevron-back" size={22} color="#D4D4D4" />
+                <Button appearance="secondary" onPress={goPrev} accessibilityLabel="Previous" {...iconBtnProps}>
+                  <Ionicons name="chevron-back" size={22} color={theme.textSecondary.val} />
             </Button>
-            <Button appearance="secondary" onPress={() => setAnchor(new Date())} accessibilityLabel="Today" {...iconBtnProps}>
-              <Ionicons name="calendar-outline" size={22} color="#D4D4D4" />
+                <Button appearance="secondary" onPress={() => setAnchor(new Date())} accessibilityLabel="Today" {...iconBtnProps}>
+                  <Ionicons name="calendar-outline" size={22} color={theme.textSecondary.val} />
             </Button>
-            <Button appearance="secondary" onPress={goNext} accessibilityLabel="Next" {...iconBtnProps}>
-              <Ionicons name="chevron-forward" size={22} color="#D4D4D4" />
+                <Button appearance="secondary" onPress={goNext} accessibilityLabel="Next" {...iconBtnProps}>
+                  <Ionicons name="chevron-forward" size={22} color={theme.textSecondary.val} />
             </Button>
           </XStack>
         </XStack>
 
         <Card>
-          <Text color="white">{header}</Text>
+          <Text color="$textPrimary">{header}</Text>
           {isWeb && view === 'month' && (
             <YStack gap="$2" marginTop="$3" width="100%">
               <XStack justifyContent="space-between" marginBottom="$2" paddingHorizontal={4}>
@@ -132,7 +159,7 @@ export default function CalendarScreen() {
             <XStack gap="$3" marginTop="$3">
               {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d, i) => (
                 <DayColumn
-                  fontColor="white"
+                  fontColor="$textPrimary"
                   key={d}
                   dayLabel={d}
                   dateLabel={`${startOfWeek(anchor).getDate() + i}`}
@@ -151,7 +178,7 @@ export default function CalendarScreen() {
           {!isWeb && view === 'day' && (
             <YStack gap="$3" marginTop="$3">
               <DayColumn
-                fontColor="white"
+                fontColor="$textPrimary"
                 isToday={isSameDay(anchor, new Date())}
                 dateBadgeSize={40}
                 dayLabel={anchor.toLocaleDateString(undefined, { weekday: 'short' })}

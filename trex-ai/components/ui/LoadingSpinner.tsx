@@ -1,10 +1,11 @@
 import { ActivityIndicator } from 'react-native';
-import { View } from 'tamagui';
+import { View, useTheme } from 'tamagui';
 
 export function LoadingSpinner() {
+  const theme = useTheme();
   return (
     <View alignItems="center" justifyContent="center" padding="$4">
-      <ActivityIndicator color="#FAFAFA" />
+      <ActivityIndicator color={theme.textPrimary.val} />
     </View>
   );
 }
